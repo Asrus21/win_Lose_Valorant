@@ -1,0 +1,27 @@
+// Código para Apps Script (File > New > Script)
+const API_KEY = 'RGAPI-7cfce0dc-2e63-4dbd-a8c3-aea37d5fdefb';
+
+function doGet(e) {
+  const puuid = e.parameter.puuid;
+  // Puxa últimas 20 partidas competitivas
+  const url = `https://americas.api.riotgames.com/val/match/v1/matchlists/by-puuid/${puuid}?type=competitive&start=0&count=20&api_key=${API_KEY}`;
+  const resp = UrlFetchApp.fetch(url);
+  const list = JSON.parse(resp.getContentText()).history;
+  
+  // Conta vitórias e derrotas
+  let wins = 0, losses = 0;
+  list.forEach(m => {
+    const match = JSON.parse(UrlFetchApp.fetch(
+      `https://americas.api.riotgames.com/val/match/v1/matches/${m.matchId}?api_key=${API_KEY}`
+    ).getContentText());
+    // verifica se foi win pelo próprio puuid
+    const player = match.players.all_players.find(p => p.puuid === puuid);
+    if (player.stats.win) wins++;
+    else losses++;
+  });
+  
+  const output = { wins, losses };
+  return ContentService
+    .createTextOutput(JSON.stringify(output))
+    .setMimeType(ContentService.MimeType.JSON);
+}
